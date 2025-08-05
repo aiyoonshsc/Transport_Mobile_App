@@ -2,10 +2,20 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: [],
+    domains: ['readdy.ai'],
+    unoptimized: true,
   },
   typescript: {
     // ignoreBuildErrors: true,
+  },
+  trailingSlash: false,
+  async rewrites() {
+    return [
+      {
+        source: '/:path*',
+        destination: '/:path*',
+      },
+    ];
   },
 };
 
