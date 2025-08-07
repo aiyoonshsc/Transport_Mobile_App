@@ -9,8 +9,8 @@ export default function Home() {
       {/* Hero Section */}
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="font-[\'Pacifico\'] text-5xl font-bold text-blue-600 mb-6">
-            운송관리
+          <h1 className="font-['Pacifico'] text-5xl font-bold text-blue-600 mb-6">
+            운송관리 v2.0
           </h1>
           <p className="text-xl text-gray-700 mb-4">
             대한민국 운수회사를 위한 통합 운송관리 플랫폼
