@@ -1,10 +1,14 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
-export default function Vehicles() {
+function VehiclesContent() {
+  const searchParams = useSearchParams();
+  const jiipFilter = searchParams.get('jiip');
+  
   const [vehicles] = useState([
     { 
       id: 1, 
@@ -76,6 +80,34 @@ export default function Vehicles() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('전체');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<any>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingVehicle, setDeletingVehicle] = useState<any>(null);
+
+  const handleEdit = (vehicle: any) => {
+    setEditingVehicle(vehicle);
+    setShowEditModal(true);
+  };
+
+  const handleDelete = (vehicle: any) => {
+    setDeletingVehicle(vehicle);
+    setShowDeleteModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    // 실제 구현에서는 API 호출
+    console.log('차량 정보 수정:', editingVehicle);
+    setShowEditModal(false);
+    setEditingVehicle(null);
+  };
+
+  const handleConfirmDelete = () => {
+    // 실제 구현에서는 API 호출
+    console.log('차량 삭제:', deletingVehicle);
+    setShowDeleteModal(false);
+    setDeletingVehicle(null);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -264,8 +296,17 @@ export default function Vehicles() {
                     <button className="flex-1 bg-white text-slate-700 py-2 px-3 !rounded-button text-xs font-medium text-center hover:bg-slate-100 transition-colors border border-slate-200">
                       📍 위치확인
                     </button>
-                    <button className="flex-1 bg-slate-900 text-white py-2 px-3 !rounded-button text-xs font-medium hover:bg-slate-800 transition-colors">
+                    <button 
+                      onClick={() => handleEdit(vehicle)}
+                      className="flex-1 bg-slate-900 text-white py-2 px-3 !rounded-button text-xs font-medium hover:bg-slate-800 transition-colors"
+                    >
                       ✏️ 수정
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(vehicle)}
+                      className="w-10 bg-red-500 text-white py-2 px-3 !rounded-button text-xs font-medium hover:bg-red-600 transition-colors"
+                    >
+                      🗑️
                     </button>
                   </div>
                 </div>
@@ -281,7 +322,94 @@ export default function Vehicles() {
             <p className="text-xs text-slate-500">검색어나 필터를 바꿔보세요</p>
           </div>
         )}
+
+        {/* Edit Modal */}
+        {showEditModal && editingVehicle && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">차량 정보 수정</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">차량번호</label>
+                  <input
+                    type="text"
+                    value={editingVehicle.plateNumber}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">기사명</label>
+                  <input
+                    type="text"
+                    value={editingVehicle.driverName}
+                    onChange={(e) => setEditingVehicle({...editingVehicle, driverName: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">연락처</label>
+                  <input
+                    type="text"
+                    value={editingVehicle.driverPhone}
+                    onChange={(e) => setEditingVehicle({...editingVehicle, driverPhone: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl text-sm font-medium"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-sm font-medium"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Modal */}
+        {showDeleteModal && deletingVehicle && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">차량 삭제</h3>
+              <p className="text-sm text-slate-600 mb-6">
+                <strong>{deletingVehicle.plateNumber}</strong> 차량을 삭제하시겠습니까?<br/>
+                이 작업은 되돌릴 수 없습니다.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl text-sm font-medium"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  className="flex-1 bg-red-600 text-white py-3 rounded-xl text-sm font-medium"
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+export default function VehiclesPage() {
+  return (
+    <Suspense fallback={<div className="p-4">Loading...</div>}>
+      <VehiclesContent />
+    </Suspense>
   );
 }

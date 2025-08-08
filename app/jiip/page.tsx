@@ -67,8 +67,11 @@ export default function JiipManagement() {
   ]);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('전체');
-  const [selectedJiip, setSelectedJiip] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState('전체');
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingJiip, setEditingJiip] = useState<any>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -87,9 +90,50 @@ export default function JiipManagement() {
     const matchesSearch = jiip.jiipNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          jiip.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          jiip.ownerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === '전체' || jiip.status === filterStatus;
+    const matchesStatus = statusFilter === '전체' || jiip.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleDetailView = (jiip: any) => {
+    setEditingJiip(jiip);
+    setShowDetailModal(true);
+  };
+
+  const handleEdit = (jiip: any) => {
+    setEditingJiip(jiip);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    // 실제 구현에서는 API 호출
+    console.log('Saving jiip:', editingJiip);
+    setShowEditModal(false);
+    setEditingJiip(null);
+  };
+
+  const toggleExpand = (jiipId: number) => {
+    const newExpanded = new Set(expandedCards);
+    if (newExpanded.has(jiipId)) {
+      newExpanded.delete(jiipId);
+    } else {
+      newExpanded.add(jiipId);
+    }
+    setExpandedCards(newExpanded);
+  };
+
+  const handleDelete = (jiip: any) => {
+    if (confirm(`${jiip.jiipNumber} (${jiip.companyName})을(를) 정말 삭제하시겠습니까?`)) {
+      alert('삭제되었습니다.');
+      // 실제로는 API 호출하여 삭제
+    }
+  };
+
+  const handleStatusChange = (jiip: any, newStatus: string) => {
+    if (confirm(`${jiip.jiipNumber}의 상태를 '${newStatus}'로 변경하시겠습니까?`)) {
+      alert(`상태가 '${newStatus}'로 변경되었습니다.`);
+      // 실제로는 API 호출하여 상태 변경
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white pt-20 pb-24">
@@ -125,9 +169,9 @@ export default function JiipManagement() {
             {['전체', '정상', '일시정지', '해지'].map((status) => (
               <button
                 key={status}
-                onClick={() => setFilterStatus(status)}
-                className={`px-3 py-1.5 !rounded-button text-xs font-medium whitespace-nowrap transition-all ${
-                  filterStatus === status
+                onClick={() => setStatusFilter(status)}
+              className={`px-3 py-1.5 !rounded-button text-xs font-medium whitespace-nowrap transition-all ${
+                statusFilter === status
                     ? 'bg-slate-900 text-white'
                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                 }`}
@@ -206,12 +250,30 @@ export default function JiipManagement() {
                       </span>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => setSelectedJiip(selectedJiip === jiip.id ? null : jiip.id)}
-                    className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center hover:bg-slate-300 transition-colors"
-                  >
-                    <i className={`ri-arrow-${selectedJiip === jiip.id ? 'up' : 'down'}-s-line text-slate-600`}></i>
-                  </button>
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => handleDetailView(jiip)}
+                      className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center hover:bg-slate-300 transition-colors"
+                    >
+                      <i className="ri-eye-line text-slate-600 text-xs"></i>
+                    </button>
+                    <button 
+                      onClick={() => handleEdit(jiip)}
+                      className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center hover:bg-slate-300 transition-colors"
+                    >
+                      <i className="ri-edit-line text-slate-600 text-xs"></i>
+                    </button>
+                    <button 
+                      onClick={() => toggleExpand(jiip.id)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                        expandedCards.has(jiip.id)
+                          ? 'bg-slate-300 text-slate-700'
+                          : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                      }`}
+                    >
+                      <i className={`ri-arrow-${expandedCards.has(jiip.id) ? 'up' : 'down'}-s-line`}></i>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -245,7 +307,7 @@ export default function JiipManagement() {
               </div>
 
               {/* Expanded Vehicle List */}
-              {selectedJiip === jiip.id && (
+              {expandedCards.has(jiip.id) && (
                 <div className="border-t border-slate-200 bg-white px-5 py-4">
                   <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center">
                     <i className="ri-truck-line mr-2 text-slate-500"></i>
@@ -287,6 +349,159 @@ export default function JiipManagement() {
                   </div>
                 </div>
               )}
+
+        {/* Detail Modal */}
+        {showDetailModal && editingJiip && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-slate-900">지입 상세정보</h3>
+                <button 
+                  onClick={() => setShowDetailModal(false)}
+                  className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center hover:bg-slate-300 transition-colors"
+                >
+                  <i className="ri-close-line text-slate-600"></i>
+                </button>
+              </div>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">지입번호</label>
+                  <p className="text-slate-900">{editingJiip.jiipNumber}</p>
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">회사명</label>
+                  <p className="text-slate-900">{editingJiip.companyName}</p>
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">대표자</label>
+                  <p className="text-slate-900">{editingJiip.ownerName}</p>
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">연락처</label>
+                  <p className="text-slate-900">{editingJiip.phone}</p>
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">주소</label>
+                  <p className="text-slate-900">{editingJiip.address}</p>
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">상태</label>
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                    editingJiip.status === '활성' ? 'bg-green-100 text-green-800' :
+                    editingJiip.status === '대기' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {editingJiip.status}
+                  </span>
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">보유 차량</label>
+                  <p className="text-slate-900">{editingJiip.vehicleCount}대</p>
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">등록일</label>
+                  <p className="text-slate-900">{editingJiip.registrationDate}</p>
+                </div>
+                {editingJiip.notes && (
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">비고</label>
+                    <p className="text-slate-900">{editingJiip.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {showEditModal && editingJiip && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">지입 정보 수정</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">지입번호</label>
+                  <input
+                    type="text"
+                    value={editingJiip.jiipNumber}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">회사명</label>
+                  <input
+                    type="text"
+                    value={editingJiip.companyName}
+                    onChange={(e) => setEditingJiip({...editingJiip, companyName: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">대표자</label>
+                  <input
+                    type="text"
+                    value={editingJiip.ownerName}
+                    onChange={(e) => setEditingJiip({...editingJiip, ownerName: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">연락처</label>
+                  <input
+                    type="text"
+                    value={editingJiip.phone}
+                    onChange={(e) => setEditingJiip({...editingJiip, phone: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">주소</label>
+                  <input
+                    type="text"
+                    value={editingJiip.address}
+                    onChange={(e) => setEditingJiip({...editingJiip, address: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">상태</label>
+                  <select
+                    value={editingJiip.status}
+                    onChange={(e) => setEditingJiip({...editingJiip, status: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  >
+                    <option value="활성">활성</option>
+                    <option value="대기">대기</option>
+                    <option value="중단">중단</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">비고</label>
+                  <textarea
+                    value={editingJiip.notes || ''}
+                    onChange={(e) => setEditingJiip({...editingJiip, notes: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm h-20 resize-none"
+                  />
+                </div>
+              </div>
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl text-sm font-medium"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-sm font-medium"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
             </div>
           ))}
         </div>
